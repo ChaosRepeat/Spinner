@@ -1,36 +1,36 @@
+import Dispatch
 import Foundation
 import Nanoseconds
-import Dispatch
 import Rainbow
 import Signals
 
 public final class Spinner {
 
-    /// Pattern holding frames to be animated    
-    var pattern: SpinnerPattern {
-        didSet {
-            self.frameIndex = 0
-        }
+  /// Pattern holding frames to be animated
+  var pattern: SpinnerPattern {
+    didSet {
+      self.frameIndex = 0
     }
-    /// Text that is displayed next to spinner
-    var text: String
-    /// Boolean representing fs the spinner is currently animating
-    var running: Bool
-    /// Int representing the index of the current frame
-    var frameIndex: Int
-    /// Double repenting the wait time for frame animation
-    var speed: Double
-    /// Dispatch queue that the spinner will run within
-    var queue: DispatchQueue
-    /// Color of the spinner
-    var color: Color
-    /// timestamp
-    var timestamp: Now?
-    /// Format of the Spinner
-    var format: String
+  }
+  /// Text that is displayed next to spinner
+  var text: String
+  /// Boolean representing fs the spinner is currently animating
+  var running: Bool
+  /// Int representing the index of the current frame
+  var frameIndex: Int
+  /// Double repenting the wait time for frame animation
+  var speed: Double
+  /// Dispatch queue that the spinner will run within
+  var queue: DispatchQueue
+  /// Color of the spinner
+  var color: Color
+  /// timestamp
+  var timestamp: Now?
+  /// Format of the Spinner
+  var format: String
 
-    /**
-    Create new spinner 
+  /**
+    Create new spinner
 
     - Parameter _: SpinnerPattern - The pattern the spinner will animate over
     - Parameter _: String - The text the spinner will display
@@ -38,44 +38,47 @@ public final class Spinner {
     - Parameter color: Color - The color the animated pattern will render as - default is white
     - Parameter: format: String - The format of the spinner - default is "{S} {T}"
     */
-    public init(_ pattern: SpinnerPattern, _ text: String = "", speed: Double? = nil, color: Color = .default, format: String = "{S} {T}") {
-        self.pattern = pattern
-        self.text = text
-        self.speed = speed ?? pattern.defaultSpeed
-        self.color = color
-        self.format = format.uppercased()
+  public init(
+    _ pattern: SpinnerPattern, _ text: String = "", speed: Double? = nil, color: Color = .default,
+    format: String = "{S} {T}"
+  ) {
+    self.pattern = pattern
+    self.text = text
+    self.speed = speed ?? pattern.defaultSpeed
+    self.color = color
+    self.format = format.uppercased()
 
-        self.frameIndex = 0
-        self.running = false
-        self.queue = DispatchQueue(label: "io.Swift.Spinner")
+    self.frameIndex = 0
+    self.running = false
+    self.queue = DispatchQueue(label: "io.Swift.Spinner")
 
-        Signals.trap(signal: .int) { _ in
-            print("\u{001B}[?25h", terminator: "")
-            exit(0)
-        }
+    Signals.trap(signal: .int) { _ in
+      print("\u{001B}[?25h", terminator: "")
+      exit(0)
     }
+  }
 
-    /**
-    Starts the animation for the spinner and returns self. 
+  /**
+    Starts the animation for the spinner and returns self.
     */
-    @discardableResult
-    public func start() -> Spinner {
-        self.hideCursor()
-        self.running = true
-        self.timestamp = Now()
-        self.queue.async { [weak self] in
+  @discardableResult
+  public func start() -> Spinner {
+    self.hideCursor()
+    self.running = true
+    self.timestamp = Now()
+    self.queue.async { [weak self] in
 
-            guard let `self` = self else { return }
+      guard let `self` = self else { return }
 
-            while self.running {
-                self.renderSpinner()
-                self.sleep(seconds: self.speed)
-            }
-        }
-        return self
+      while self.running {
+        self.renderSpinner()
+        self.sleep(seconds: self.speed)
+      }
     }
+    return self
+  }
 
-    /**
+  /**
     Stops the animation for the spinner.
 
     - Parameter finalFrame: String - The persistent frame that will be displayed on the completed spinner, default is 'nil' this will keep the current frame the spinner is on
@@ -83,193 +86,196 @@ public final class Spinner {
     - Parameter color: Color - The color of the final spinner frame
     - Parameter terminator: String - The terminator used for ending writing a line to the terminal, default is '\n' this will return the curser to a new line
     */
-    public func stop(finalFrame: String? = nil, text: String? = nil, color: Color? = nil, terminator: String = "\n") {
-        self.running = false
-        if let text = text {
-            self.updateText(text)
-        }
-        if let color = color {
-            self.updateColor(color)
-        }
-        var finalPattern: SpinnerPattern?
-        if let frame = finalFrame {
-            finalPattern = SpinnerPattern(singleFrame: frame)
-        }
-        if let pattern = finalPattern {
-            self.text += Array(repeating: " ", count: self.getPatternPadding(pattern))
-            self.pattern = pattern
-        }
-        self.unhideCursor()
-        self.renderSpinner()
-        print(terminator: terminator)
+  public func stop(
+    finalFrame: String? = nil, text: String? = nil, color: Color? = nil, terminator: String = "\n"
+  ) {
+    self.running = false
+    if let text = text {
+      self.updateText(text)
     }
+    if let color = color {
+      self.updateColor(color)
+    }
+    var finalPattern: SpinnerPattern?
+    if let frame = finalFrame {
+      finalPattern = SpinnerPattern(singleFrame: frame)
+    }
+    if let pattern = finalPattern {
+      self.text += Array(repeating: " ", count: self.getPatternPadding(pattern))
+      self.pattern = pattern
+    }
+    self.unhideCursor()
+    self.renderSpinner()
+    print(terminator: terminator)
+  }
 
-    /**
+  /**
     Clears the spinner from the terminal and returns the curser to the start of the spinner
     */
-    public func clear() {
-        self.stop(finalFrame: "", text: "", terminator: "\r")
-    }
+  public func clear() {
+    self.stop(finalFrame: "", text: "", terminator: "\r")
+  }
 
-    /**
+  /**
     Updates the pattern displayed by the spinner
 
     - Parameter _: SpinnerPattern - New pattern the spinner should animate over
     */
-    @discardableResult
-    public func updatePattern(_ newPattern: SpinnerPattern) -> Spinner {
-        self.format += Array(repeating: " ", count: self.getPatternPadding(newPattern))
-        self.pattern = newPattern
-        return self
-    }
+  @discardableResult
+  public func updatePattern(_ newPattern: SpinnerPattern) -> Spinner {
+    self.format += Array(repeating: " ", count: self.getPatternPadding(newPattern))
+    self.pattern = newPattern
+    return self
+  }
 
-    /**
+  /**
     Updates the text displayed next to the spinner
-    
+
     - Parameter _: String - New text the spinner should display
     */
-    @discardableResult
-    public func updateText(_ newText: String) {
-        self.format += Array(repeating: " ", count: self.getTextPadding(newText))
-        self.text = newText
-        return self
-    }
+  @discardableResult
+  public func updateText(_ newText: String) -> Spinner{
+    self.format += Array(repeating: " ", count: self.getTextPadding(newText))
+    self.text = newText
+    return self
+  }
 
-    /**
+  /**
     Updates the speed of the spinner
 
     - Parameter _: Double - New speed the spinner should animate at
     */
-    @discardableResult
-    public func updateSpeed(_ newSpeed: Double) {
-        self.speed = newSpeed
-        return self
-    } 
+  @discardableResult
+  public func updateSpeed(_ newSpeed: Double) -> Spinner {
+    self.speed = newSpeed
+    return self
+  }
 
-    /**
+  /**
     Updates the color of the spinner
 
     - Parameter _: Color - New color for the spinner
     */
-    @discardableResult
-    public func updateColor(_ newColor: Color) {
-        self.color = newColor
-        return self
-    }
+  @discardableResult
+  public func updateColor(_ newColor: Color) -> Spinner {
+    self.color = newColor
+    return self
+  }
 
-    /**
+  /**
     Updates the format the spinier will render as
 
     - Parameter _: String - New format for spinner to display as
     */
- @discardableResult
-    public func updateFormat(_ newFormat: String) {
-        self.format = newFormat
-        return self
-    }
+  @discardableResult
+  public func updateFormat(_ newFormat: String) -> Spinner {
+    self.format = newFormat
+    return self
+  }
 
-    /**
+  /**
     Stops the spinner and displays a green ✔ with the provided text
 
-   - Parameter _: String The persistent text that will be displayed on the completed spinner, default will keep the current text of the spinner 
+   - Parameter _: String The persistent text that will be displayed on the completed spinner, default will keep the current text of the spinner
     */
-    public func succeed(_ text: String? = nil) {
-        self.stop(finalFrame: "✔", text: text, color: .green)
-    }
+  public func succeed(_ text: String? = nil) {
+    self.stop(finalFrame: "✔", text: text, color: .green)
+  }
 
-    /**
+  /**
     Stops the spinner and displays a red ✖ with the provided text
 
     - Parameter _: String The persistent text that will be displayed on the completed spinner
     */
-    public func failure(_ text: String? = nil) {
-        self.stop(finalFrame: "✖", text: text, color: .red)
-    }
+  public func failure(_ text: String? = nil) {
+    self.stop(finalFrame: "✖", text: text, color: .red)
+  }
 
-    /**
+  /**
     Stops the spinner and displays a yellow ⚠ with the provided text
 
-    - Parameter _: String The persistent text that will be displayed on the completed spinner,  default will keep the current text of the spinner 
+    - Parameter _: String The persistent text that will be displayed on the completed spinner,  default will keep the current text of the spinner
     */
-    public func warning(_ text: String? = nil) {
-        self.stop(finalFrame: "⚠", text: text, color: .yellow)
-    }
+  public func warning(_ text: String? = nil) {
+    self.stop(finalFrame: "⚠", text: text, color: .yellow)
+  }
 
-    /**
+  /**
     Stops the spinner and displays a blue ℹ with the provided text
 
-    - Parameter _: String The persistent text that will be displayed on the completed spinner,  default will keep the current text of the spinner 
+    - Parameter _: String The persistent text that will be displayed on the completed spinner,  default will keep the current text of the spinner
     */
-    public func information(_ text: String? = nil) {
-        self.stop(finalFrame: "ℹ", text: text, color: .blue)
+  public func information(_ text: String? = nil) {
+    self.stop(finalFrame: "ℹ", text: text, color: .blue)
+  }
+
+  func getTextPadding(_ newText: String) -> Int {
+
+    let newText = Rainbow.extractModes(for: newText)
+    let oldText = Rainbow.extractModes(for: self.text)
+
+    let textLengthDifference: Int = oldText.text.count - newText.text.count
+
+    if textLengthDifference > 0 {
+      return textLengthDifference
+    } else {
+      return 0
     }
+  }
 
-    func getTextPadding(_ newText: String) -> Int {
+  func getPatternPadding(_ newPattern: SpinnerPattern) -> Int {
 
-        let newText = Rainbow.extractModes(for: newText)
-        let oldText = Rainbow.extractModes(for: self.text)
+    let newPatternFrameWidth: Int = Rainbow.extractModes(for: newPattern.frames[0]).text.count
+    let oldPatternFrameWidth: Int = Rainbow.extractModes(for: self.pattern.frames[0]).text.count
 
-        let textLengthDifference: Int = oldText.text.count - newText.text.count
+    let patternFrameWidthDifference: Int = oldPatternFrameWidth - newPatternFrameWidth
 
-        if textLengthDifference > 0 {
-            return textLengthDifference
-        } else {
-            return 0
-        }
+    if patternFrameWidthDifference > 0 {
+      return patternFrameWidthDifference
+    } else {
+      return 0
     }
+  }
 
-    func getPatternPadding(_ newPattern: SpinnerPattern) -> Int {
-        
-        let newPatternFrameWidth: Int = Rainbow.extractModes(for: newPattern.frames[0]).text.count
-        let oldPatternFrameWidth: Int = Rainbow.extractModes(for: self.pattern.frames[0]).text.count
+  func sleep(seconds: Double) {
+    usleep(useconds_t(seconds * 1_000_000))
+  }
 
-        let patternFrameWidthDifference: Int = oldPatternFrameWidth - newPatternFrameWidth
+  func currentFrame() -> String {
 
-        if patternFrameWidthDifference > 0 {
-            return patternFrameWidthDifference
-        }else {
-            return 0
-        }
+    let currentFrame = self.pattern.frames[self.frameIndex].applyingCodes(self.color)
+
+    self.frameIndex = (self.frameIndex + 1) % self.pattern.frames.count
+
+    return currentFrame
+  }
+
+  func renderSpinner() {
+
+    // Reset cursor to start of line
+    print("\r", terminator: "")
+    // Print the spinner frame and text
+    var renderString = self.format.replacingOccurrences(of: "{S}", with: self.currentFrame())
+      .replacingOccurrences(of: "{T}", with: self.text)
+    // get duration
+    if let timestamp = self.timestamp {
+      let duration = Now() - timestamp
+      renderString = renderString.replacingOccurrences(of: "{D}", with: duration.timeString)
     }
+    print(renderString, terminator: "")
+    // Flush STDOUT
+    fflush(stdout)
 
-    func sleep(seconds: Double) {
-        usleep(useconds_t(seconds * 1_000_000))
-    }
+  }
 
-    func currentFrame() -> String {
+  func hideCursor() {
+    print("\u{001B}[?25l", terminator: "")
+    fflush(stdout)
+  }
 
-        let currentFrame = self.pattern.frames[self.frameIndex].applyingCodes(self.color)
-
-        self.frameIndex = (self.frameIndex + 1) % self.pattern.frames.count
-
-        return currentFrame
-    }
-
-    func renderSpinner() {
-
-        // Reset cursor to start of line
-        print("\r", terminator: "")
-        // Print the spinner frame and text
-        var  renderString = self.format.replacingOccurrences(of: "{S}", with: self.currentFrame()).replacingOccurrences(of: "{T}", with: self.text)
-        // get duration
-        if let timestamp = self.timestamp {
-            let duration = Now() - timestamp
-            renderString = renderString.replacingOccurrences(of: "{D}", with: duration.timeString)
-        }
-        print(renderString, terminator: "")
-        // Flush STDOUT
-        fflush(stdout)
-
-    }
-
-    func hideCursor() {
-        print("\u{001B}[?25l", terminator: "")
-        fflush(stdout)
-    }
-    
-    func unhideCursor() {
-        print("\u{001B}[?25h", terminator: "")
-        fflush(stdout)
-    }
+  func unhideCursor() {
+    print("\u{001B}[?25h", terminator: "")
+    fflush(stdout)
+  }
 
 }
