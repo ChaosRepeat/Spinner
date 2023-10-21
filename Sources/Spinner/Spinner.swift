@@ -56,9 +56,10 @@ public final class Spinner {
     }
 
     /**
-    Starts the animation for the spinner.
+    Starts the animation for the spinner and returns self. 
     */
-    public func start() {
+    @discardableResult
+    public func start() -> Spinner {
         self.hideCursor()
         self.running = true
         self.timestamp = Now()
@@ -71,6 +72,7 @@ public final class Spinner {
                 self.sleep(seconds: self.speed)
             }
         }
+        return self
     }
 
     /**
@@ -114,9 +116,11 @@ public final class Spinner {
 
     - Parameter _: SpinnerPattern - New pattern the spinner should animate over
     */
-    public func updatePattern(_ newPattern: SpinnerPattern) {
+    @discardableResult
+    public func updatePattern(_ newPattern: SpinnerPattern) -> Spinner {
         self.format += Array(repeating: " ", count: self.getPatternPadding(newPattern))
         self.pattern = newPattern
+        return self
     }
 
     /**
@@ -124,9 +128,11 @@ public final class Spinner {
     
     - Parameter _: String - New text the spinner should display
     */
+    @discardableResult
     public func updateText(_ newText: String) {
         self.format += Array(repeating: " ", count: self.getTextPadding(newText))
         self.text = newText
+        return self
     }
 
     /**
@@ -134,8 +140,10 @@ public final class Spinner {
 
     - Parameter _: Double - New speed the spinner should animate at
     */
+    @discardableResult
     public func updateSpeed(_ newSpeed: Double) {
         self.speed = newSpeed
+        return self
     } 
 
     /**
@@ -143,8 +151,10 @@ public final class Spinner {
 
     - Parameter _: Color - New color for the spinner
     */
+    @discardableResult
     public func updateColor(_ newColor: Color) {
         self.color = newColor
+        return self
     }
 
     /**
@@ -152,8 +162,10 @@ public final class Spinner {
 
     - Parameter _: String - New format for spinner to display as
     */
+ @discardableResult
     public func updateFormat(_ newFormat: String) {
         self.format = newFormat
+        return self
     }
 
     /**
